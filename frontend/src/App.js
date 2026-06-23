@@ -35,11 +35,7 @@ function App() {
           </button>
         </div>
 
-        <div className="nav-right">
-          <button onClick={() => setPage("analysis")}>
-            Start Analysis
-          </button>
-        </div>
+        
       </nav>
 
       {page === "home" && (
