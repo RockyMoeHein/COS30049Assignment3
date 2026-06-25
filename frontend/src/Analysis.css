@@ -67,6 +67,30 @@
   width: 8px;
 }
 
+.analysis-api-status.is-connecting i {
+  animation: analysis-pulse 1.2s ease-out infinite;
+  background: #f5c96b;
+}
+
+.analysis-api-status.is-unavailable {
+  color: #ff9aa6;
+}
+
+.analysis-api-status.is-unavailable i {
+  background: #ff6b7a;
+}
+
+.analysis-api-status button {
+  background: transparent;
+  border: 0;
+  color: #9e91ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0 0 0 4px;
+}
+
 .analysis-workspace {
   background: #0d172a;
   border: 1px solid #293754;
@@ -248,8 +272,13 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 800;
-  min-width: 140px;
+  min-width: 190px;
   padding: 12px 18px;
+}
+
+@keyframes analysis-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 201, 107, 0.4); }
+  70%, 100% { box-shadow: 0 0 0 7px rgba(245, 201, 107, 0); }
 }
 
 .analysis-submit-action {

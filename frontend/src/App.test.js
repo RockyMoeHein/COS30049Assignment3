@@ -1,8 +1,22 @@
 import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+jest.mock('./Statistics', () => function Statistics() {
+  return <main>Statistics</main>;
+});
+
+beforeAll(() => {
+  window.scrollTo = jest.fn();
+});
+
+test('renders the application navigation', () => {
+  render(
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <App />
+    </BrowserRouter>
+  );
+  expect(screen.getByRole('navigation')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /code vulnerability detector/i }))
+    .toBeInTheDocument();
 });

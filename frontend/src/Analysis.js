@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./Analysis.css";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
@@ -76,16 +76,30 @@ function Analysis() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(null);
+  const [apiStatus, setApiStatus] = useState("connecting");
 
-  useEffect(() => {
+  const loadModels = useCallback(() => {
+    setApiStatus("connecting");
+    setError("");
     fetch(`${API_URL}/models`)
       .then((response) => {
         if (!response.ok) throw new Error("Could not load the model list.");
         return response.json();
       })
-      .then((data) => setModels(data))
-      .catch((requestError) => setError(requestError.message));
+      .then((data) => {
+        setModels(data);
+        setApiStatus("connected");
+      })
+      .catch((requestError) => {
+        setModels([]);
+        setApiStatus("unavailable");
+        setError(requestError.message);
+      });
   }, []);
+
+  useEffect(() => {
+    loadModels();
+  }, [loadModels]);
 
   const selectedVariant = modelFamily === "codebert"
     ? useVariation ? "cwe_balanced" : "standard"
@@ -118,12 +132,18 @@ function Analysis() {
     setError("");
     setElapsedTime(null);
     const startedAt = performance.now();
+    const controller = new AbortController();
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      modelFamily === "codebert" ? 120000 : 30000
+    );
 
     try {
       const response = await fetch(`${API_URL}/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: code.trim(), model_key: modelKey }),
+        signal: controller.signal,
       });
       const data = await response.json();
 
@@ -131,16 +151,23 @@ function Analysis() {
         throw new Error(getErrorMessage(data, "Prediction could not be completed."));
       }
 
-      setResult(data);
-      setHistory((current) => [data, ...current].slice(0, 3));
+      const completedAnalysis = {
+        ...data,
+        submitted_code: code.trim(),
+      };
+      setResult(completedAnalysis);
+      setHistory((current) => [completedAnalysis, ...current].slice(0, 3));
       setElapsedTime((performance.now() - startedAt) / 1000);
     } catch (requestError) {
       setError(
-        requestError.message === "Failed to fetch"
+        requestError.name === "AbortError"
+          ? "The analysis timed out. Check the backend and try again."
+          : requestError.message === "Failed to fetch"
           ? "Cannot connect to FastAPI. Start the backend and try again."
           : requestError.message
       );
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   }
@@ -181,7 +208,11 @@ function Analysis() {
 
   function exportResult() {
     if (!result) return;
-    const file = new Blob([JSON.stringify({ code, ...result }, null, 2)], {
+    const { submitted_code: submittedCode, ...prediction } = result;
+    const file = new Blob([JSON.stringify({
+      code: submittedCode,
+      ...prediction,
+    }, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(file);
@@ -205,9 +236,16 @@ function Analysis() {
             extracted risk indicators.
           </span>
         </div>
-        <div className="analysis-api-status">
+        <div className={`analysis-api-status is-${apiStatus}`}>
           <i />
-          {models.length ? `${models.length} models available` : "Connecting to API"}
+          <span>
+            {apiStatus === "connecting" && "Connecting to API"}
+            {apiStatus === "connected" && `${models.length} models available`}
+            {apiStatus === "unavailable" && "Model API unavailable"}
+          </span>
+          {apiStatus === "unavailable" && (
+            <button onClick={loadModels} type="button">Retry</button>
+          )}
         </div>
       </section>
 
@@ -219,6 +257,7 @@ function Analysis() {
               <select
                 onChange={(event) => {
                   setModelFamily(event.target.value);
+                  setResult(null);
                   setElapsedTime(null);
                 }}
                 value={modelFamily}
@@ -234,6 +273,7 @@ function Analysis() {
                 checked={useVariation}
                 onChange={(event) => {
                   setUseVariation(event.target.checked);
+                  setResult(null);
                   setElapsedTime(null);
                 }}
                 type="checkbox"
@@ -286,6 +326,7 @@ function Analysis() {
             maxLength={MAX_CODE_LENGTH}
             onChange={(event) => {
               setCode(event.target.value);
+              setResult(null);
               setError("");
               setElapsedTime(null);
             }}
@@ -321,7 +362,11 @@ function Analysis() {
               onClick={analyzeCode}
               type="button"
             >
-              {loading ? "Analyzing..." : "Analyze code"}
+              {loading
+                ? modelFamily === "codebert"
+                  ? "Loading CodeBERT and analyzing..."
+                  : "Analyzing..."
+                : "Analyze code"}
             </button>
           </div>
         </div>

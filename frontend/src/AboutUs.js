@@ -1,5 +1,8 @@
 import React from "react";
 import "./AboutUs.css";
+import khantPhoto from "./assets/khantthu.jpg";
+import zinPhoto from "./assets/zinko.png";
+import sawPhoto from "./assets/sawnay.jpg";
 
 function About() {
   return (
@@ -24,7 +27,7 @@ function About() {
 
         <div className="goal-grid">
           <div className="goal-card">
-            <div className="goal-icon">🎯</div>
+            <div className="goal-icon">01</div>
             <h3>Detect Vulnerable Code</h3>
             <p>
               Identify possible security weaknesses in source code using a
@@ -33,7 +36,7 @@ function About() {
           </div>
 
           <div className="goal-card">
-            <div className="goal-icon">🤖</div>
+            <div className="goal-icon">02</div>
             <h3>Apply Machine Learning</h3>
             <p>
               Use AI techniques to classify code as vulnerable or
@@ -42,7 +45,7 @@ function About() {
           </div>
 
           <div className="goal-card">
-            <div className="goal-icon">📊</div>
+            <div className="goal-icon">03</div>
             <h3>Show Clear Results</h3>
             <p>
               Present prediction results, confidence scores, and vulnerability
@@ -57,7 +60,7 @@ function About() {
 
         <div className="tech-grid">
           <div className="tech-card">
-            <span className="small-icon">▣</span>
+            <span className="small-icon">ML</span>
             <h3>Machine Learning</h3>
             <p>
               The AI model is trained using cybersecurity datasets containing
@@ -66,7 +69,7 @@ function About() {
           </div>
 
           <div className="tech-card">
-            <span className="small-icon">⌁</span>
+            <span className="small-icon">PY</span>
             <h3>Python</h3>
             <p>
               Python is used for model development, data processing, prediction
@@ -75,7 +78,7 @@ function About() {
           </div>
 
           <div className="tech-card">
-            <span className="small-icon">▥</span>
+            <span className="small-icon">UI</span>
             <h3>Web Application</h3>
             <p>
               React.js provides a clean frontend interface for explaining the
@@ -124,25 +127,49 @@ function About() {
       </section>
 
       <section className="about-section">
-        <h2>Research Team</h2>
+        <h2>Team</h2>
 
         <div className="team-grid">
           <div className="team-card">
-            <div className="avatar">👨‍💻</div>
-            <h3>Frontend Developer</h3>
-            <p>Responsible for About page design, layout, and styling.</p>
+            <img
+              className="avatar"
+              src={khantPhoto}
+              alt="Khant Thu Aung"
+            />
+            <h3>Khant Thu Aung</h3>
+            <span className="team-role">Backend Integration</span>
+            <p>
+              Developed the backend integration and worked with Zin Ko Oo to
+              connect the frontend to the API and display model predictions.
+            </p>
           </div>
 
           <div className="team-card">
-            <div className="avatar">🧠</div>
-            <h3>AI Model Developer</h3>
-            <p>Responsible for model training and prediction logic.</p>
+            <img
+              className="avatar"
+              src={zinPhoto}
+              alt="Zin Ko Oo"
+            />
+            <h3>Zin Ko Oo</h3>
+            <span className="team-role">Frontend and Analysis UI</span>
+            <p>
+              Designed and developed the Home and Analysis pages, and worked
+              with Khant Thu Aung to connect model outputs to the frontend.
+            </p>
           </div>
 
           <div className="team-card">
-            <div className="avatar">🛠️</div>
-            <h3>Backend Developer</h3>
-            <p>Responsible for FastAPI endpoints and API integration.</p>
+            <img
+              className="avatar"
+              src={sawPhoto}
+              alt="Saw Nay Wun"
+            />
+            <h3>Saw Nay Wun</h3>
+            <span className="team-role">Visualization and About UI</span>
+            <p>
+              Developed the About Us and Statistics pages, including dataset
+              visualizations, with additional contributions across the project.
+            </p>
           </div>
         </div>
       </section>

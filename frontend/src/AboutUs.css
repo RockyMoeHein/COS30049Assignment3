@@ -1,12 +1,15 @@
 .about-page {
-  max-width: 1100px;
-  margin: auto;
-  padding: 52px 20px 95px;
+  background: #071124;
+  min-height: 100vh;
+  padding: 52px 36px 76px;
 }
 
 .about-hero {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1180px;
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 58px;
 }
 
 .project-badge {
@@ -36,94 +39,130 @@
 }
 
 .about-section {
-  margin-bottom: 55px;
+  margin: 0 auto 55px;
+  max-width: 1180px;
 }
 
 .about-section h2 {
   text-align: center;
   color: #e0e7ff;
   font-size: 18px;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 /* PROJECT GOALS */
 .goal-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  gap: 0;
 }
 
 .goal-card {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 5px;
-  padding: 24px;
-  text-align: center;
+  border-left: 1px solid #26344e;
+  padding: 4px 32px;
   min-height: 150px;
 }
 
+.goal-card:first-child {
+  border-left: 0;
+}
+
 .goal-icon {
-  font-size: 28px;
-  margin-bottom: 12px;
+  color: #6ee7b7;
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 20px;
 }
 
 .goal-card h3 {
   color: #c4b5fd;
-  font-size: 13px;
-  margin-bottom: 8px;
+  font-size: 15px;
+  margin-bottom: 10px;
 }
 
 .goal-card p {
   color: #cbd5e1;
-  font-size: 11px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 /* CORE TECHNOLOGIES */
 .tech-grid {
+  border-bottom: 1px solid #26344e;
+  border-top: 1px solid #26344e;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  gap: 0;
+  padding: 12px 0;
 }
 
 .tech-card {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 5px;
-  padding: 22px;
-  min-height: 110px;
+  align-items: start;
+  border-left: 1px solid #26344e;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  padding: 18px 28px;
+}
+
+.tech-card:first-child {
+  border-left: 0;
 }
 
 .small-icon {
+  align-items: center;
+  border: 1px solid #4c3f83;
   color: #a78bfa;
-  font-size: 13px;
+  display: flex;
+  font-size: 11px;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  margin-top: 2px;
+  width: 34px;
+  grid-column: 1;
+  grid-row: 1 / 3;
 }
 
 .tech-card h3 {
   color: #c4b5fd;
   font-size: 13px;
-  margin: 8px 0;
+  grid-column: 2;
+  margin: 0 0 7px;
 }
 
 .tech-card p {
   color: #cbd5e1;
   font-size: 11px;
+  grid-column: 2;
   line-height: 1.6;
+  margin: 0;
+  max-width: 290px;
 }
 
 /* SYSTEM MODULES */
 .module-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
+  gap: 42px;
+  position: relative;
 }
 
 .module-card {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 5px;
-  padding: 20px;
+  border-top: 2px solid #8b5cf6;
+  padding: 18px 8px 0;
+  position: relative;
   text-align: center;
+}
+
+.module-card:not(:last-child)::after {
+  color: #6ee7b7;
+  content: "→";
+  font-size: 20px;
+  position: absolute;
+  right: -31px;
+  top: 11px;
 }
 
 .module-card h3 {
@@ -154,22 +193,30 @@
 }
 
 .avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #111827;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #0f172a;
+  border: 2px solid #8b5cf6;
+  color: #6ee7b7;
   margin: 0 auto 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
+  display: block;
+  object-fit: cover;
 }
 
 .team-card h3 {
   color: #e0e7ff;
   font-size: 13px;
   margin-bottom: 6px;
+}
+
+.team-role {
+  display: block;
+  color: #6ee7b7;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-transform: uppercase;
 }
 
 .team-card p {
@@ -179,7 +226,48 @@
 }
 
 /* RESPONSIVE */
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
+  .about-page {
+    padding: 44px 20px 64px;
+  }
+
+  .goal-grid,
+  .tech-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .goal-card:nth-child(3),
+  .tech-card:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid #26344e;
+    grid-column: 1 / -1;
+    margin-top: 20px;
+    padding-top: 24px;
+  }
+
+  .module-grid {
+    gap: 24px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .module-card::after {
+    display: none;
+  }
+
+  .team-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .about-hero h1 {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 600px) {
+  .about-page {
+    padding: 36px 14px 48px;
+  }
+
   .goal-grid,
   .tech-grid,
   .team-grid,
@@ -187,7 +275,29 @@
     grid-template-columns: 1fr;
   }
 
+  .goal-card,
+  .goal-card:first-child,
+  .goal-card:nth-child(3),
+  .tech-card,
+  .tech-card:first-child,
+  .tech-card:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid #26344e;
+    grid-column: auto;
+    margin-top: 0;
+    padding: 24px 8px;
+  }
+
+  .goal-card:first-child,
+  .tech-card:first-child {
+    border-top: 0;
+  }
+
+  .module-grid {
+    gap: 28px;
+  }
+
   .about-hero h1 {
-    font-size: 32px;
+    font-size: 28px;
   }
 }

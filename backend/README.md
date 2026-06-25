@@ -4,17 +4,35 @@ FastAPI backend for the C/C++ vulnerability detection web application.
 
 ## Setup
 
+Use Python 3.13 because the Assignment 2 models were created with
+scikit-learn 1.8.0.
+
+### Windows
+
+```powershell
+cd COS30049Assignment3/backend
+py -3.13 -m venv .venv313
+.venv313\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+### macOS or Linux
+
 ```bash
 cd COS30049Assignment3/backend
-/opt/anaconda3/bin/python3.13 -m venv .venv313 --system-site-packages
+python3.13 -m venv .venv313
 source .venv313/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ## Run
 
+From the frontend folder, start React and FastAPI together on any supported
+operating system:
+
 ```bash
-uvicorn app.main:app --reload --port 8000
+cd ../frontend
+npm install
+npm run dev
 ```
 
 API docs will be available at:
@@ -46,6 +64,7 @@ http://127.0.0.1:8000/docs
 The backend uses model artifacts copied from Assignment 2 into `backend/model`.
 Assignment 2 files are not edited by this backend.
 
-Use Python 3.13 with scikit-learn 1.8.0. The Assignment 2 model files were saved
+The cross-platform launcher checks `.venv313`, `.venv`, and `venv`, then falls
+back to an installed Python command. The Assignment 2 model files were saved
 with scikit-learn 1.8.0, so older sklearn versions can load the files but fail
 during prediction.

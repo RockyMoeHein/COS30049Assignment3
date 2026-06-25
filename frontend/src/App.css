@@ -38,6 +38,7 @@ body {
   gap: 11px;
   padding: 0;
   text-align: left;
+  text-decoration: none;
 }
 
 .nav-logo-image {
@@ -78,7 +79,7 @@ body {
   justify-content: center;
 }
 
-.nav-menu button {
+.nav-menu a {
   background: transparent;
   border: 0;
   color: #9caac5;
@@ -87,14 +88,15 @@ body {
   cursor: pointer;
   padding: 10px 4px;
   position: relative;
+  text-decoration: none;
   transition: color 160ms ease;
 }
 
-.nav-menu button.active {
+.nav-menu a.active {
   color: #ffffff;
 }
 
-.nav-menu button.active::after {
+.nav-menu a.active::after {
   background: #2dd4c5;
   bottom: 2px;
   content: "";
@@ -104,7 +106,7 @@ body {
   right: 4px;
 }
 
-.nav-menu button:hover {
+.nav-menu a:hover {
   color: #ffffff;
 }
 
@@ -205,7 +207,7 @@ body {
     padding-bottom: 2px;
   }
 
-  .nav-menu button {
+  .nav-menu a {
     flex: 0 0 auto;
     font-size: 12px;
   }
@@ -267,15 +269,30 @@ body {
     display: flex;
   }
 
-  .nav-menu button {
+  .nav-menu a {
+    display: block;
     padding: 12px 4px;
     text-align: left;
     width: 100%;
   }
 
-  .nav-menu button.active::after {
+  .nav-menu a.active::after {
     left: 4px;
     right: auto;
     width: 34px;
+  }
+
+  .footer {
+    gap: 8px;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .footer p {
+    letter-spacing: 0;
+  }
+
+  .footer-links {
+    gap: 8px 14px;
   }
 }

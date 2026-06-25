@@ -1,4 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import {
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import Home from "./Home";
 import Analysis from "./Analysis";
 import AboutUs from "./AboutUs";
@@ -7,21 +15,26 @@ import logo from "./assets/vulnerability-ai-logo-v2.png";
 import "./App.css";
 
 function App() {
-  const [page, setPage] = useState("home");
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  function changePage(nextPage) {
-    setPage(nextPage);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  function changePage(path) {
+    navigate(path);
     setMenuOpen(false);
   }
 
   return (
     <div className="app">
       <nav className="navbar">
-        <button
+        <NavLink
           className="nav-brand"
-          onClick={() => changePage("home")}
-          type="button"
+          onClick={() => setMenuOpen(false)}
+          to="/"
         >
           <span className="nav-logo-image">
             <img src={logo} alt="" />
@@ -30,7 +43,7 @@ function App() {
             <strong>Code Vulnerability</strong>
             <small>Detector</small>
           </span>
-        </button>
+        </NavLink>
 
         <button
           aria-expanded={menuOpen}
@@ -45,48 +58,39 @@ function App() {
         </button>
 
         <div className={`nav-menu ${menuOpen ? "is-open" : ""}`}>
-          <button
-            className={page === "home" ? "active" : ""}
-            onClick={() => changePage("home")}
-          >
+          <NavLink end onClick={() => setMenuOpen(false)} to="/">
             Home
-          </button>
+          </NavLink>
 
-          <button
-            className={page === "analysis" ? "active" : ""}
-            onClick={() => changePage("analysis")}
-          >
+          <NavLink onClick={() => setMenuOpen(false)} to="/analysis">
             Analyze
-          </button>
+          </NavLink>
 
-          <button
-            className={page === "statistics" ? "active" : ""}
-            onClick={() => changePage("statistics")}
-          >
+          <NavLink onClick={() => setMenuOpen(false)} to="/statistics">
             Statistics
-          </button>
+          </NavLink>
 
-          <button
-            className={page === "about" ? "active" : ""}
-            onClick={() => changePage("about")}
-          >
+          <NavLink onClick={() => setMenuOpen(false)} to="/about">
             About
-          </button>
+          </NavLink>
         </div>
       </nav>
 
-      {page === "home" && (
-        <Home
-          goToAnalyze={() => changePage("analysis")}
-          goToAbout={() => changePage("about")}
+      <Routes>
+        <Route
+          path="/"
+          element={(
+            <Home
+              goToAnalyze={() => changePage("/analysis")}
+              goToAbout={() => changePage("/about")}
+            />
+          )}
         />
-      )}
-
-      {page === "analysis" && <Analysis />}
-
-      {page === "about" && <AboutUs />}
-
-      {page === "statistics" && <Statistics />}
+        <Route path="/analysis" element={<Analysis />} />
+        <Route path="/statistics" element={<Statistics />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="*" element={<Navigate replace to="/" />} />
+      </Routes>
 
       <footer className="footer">
         <div className="footer-brand">

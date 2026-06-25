@@ -10,13 +10,14 @@
     "d3": "^7.9.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-router-dom": "^6.30.2",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
     "start:frontend": "react-scripts start",
-    "start:backend": "cd ../backend && .venv313/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
+    "start:backend": "node scripts/start-backend.js",
     "dev": "concurrently --kill-others --names backend,frontend --prefix-colors cyan,green \"npm run start:backend\" \"npm run start:frontend\"",
     "build": "react-scripts build",
     "test": "react-scripts test",

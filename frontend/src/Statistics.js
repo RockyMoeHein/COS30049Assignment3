@@ -46,9 +46,28 @@ function showTooltip(tooltip, event, item, unit) {
     );
 }
 
-function ChartContainer({ chartRef, className }) {
+function makeInteractive(selection, getLabel, onActivate) {
+  selection
+    .attr('aria-label', getLabel)
+    .attr('role', 'button')
+    .attr('tabindex', 0)
+    .on('click', (_, item) => onActivate(item))
+    .on('keydown', (event, item) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onActivate(item);
+      }
+    });
+}
+
+function ChartContainer({ chartRef, className, label }) {
   return (
-    <div className={`statistics-chart ${className}`} ref={chartRef}>
+    <div
+      aria-label={label}
+      className={`statistics-chart ${className}`}
+      ref={chartRef}
+      role="group"
+    >
       <div className="statistics-tooltip" />
     </div>
   );
@@ -67,6 +86,7 @@ function DonutChart({ title, series, data, selectedItem, onSelect }) {
         { label: 'Non-vulnerable', value: nonVulnerable, color: '#2dd4a8' },
       ];
       const svg = d3.select(container).selectAll('svg').data([null]).join('svg')
+        .attr('aria-label', `${title} vulnerability label distribution`)
         .attr('viewBox', `0 0 ${size} ${size}`).attr('role', 'img');
       svg.selectAll('*').remove();
 
@@ -79,7 +99,7 @@ function DonutChart({ title, series, data, selectedItem, onSelect }) {
       const pie = d3.pie().sort(null).value((item) => item.value);
       const tooltip = d3.select(container).select('.statistics-tooltip');
 
-      group.selectAll('path').data(pie(values)).join('path')
+      const slices = group.selectAll('path').data(pie(values)).join('path')
         .attr('d', arc)
         .attr('fill', (item) => item.data.color)
         .attr('stroke', '#111a2e')
@@ -92,8 +112,15 @@ function DonutChart({ title, series, data, selectedItem, onSelect }) {
           selectedItem?.label !== item.data.label ? 0.35 : 1
         )
         .style('cursor', 'pointer')
-        .on('click', (_, item) =>
-          onSelect({
+        .on('pointermove', (event, item) =>
+          showTooltip(tooltip, event, item.data, 'samples')
+        )
+        .on('pointerleave', () => tooltip.classed('is-visible', false));
+
+      makeInteractive(
+        slices,
+        (item) => `${title}, ${item.data.label}, ${formatNumber(item.data.value)} samples`,
+        (item) => onSelect({
             chart: 'Vulnerability labels',
             series,
             label: item.data.label,
@@ -101,11 +128,7 @@ function DonutChart({ title, series, data, selectedItem, onSelect }) {
             unit: 'samples',
             total,
           })
-        )
-        .on('pointermove', (event, item) =>
-          showTooltip(tooltip, event, item.data, 'samples')
-        )
-        .on('pointerleave', () => tooltip.classed('is-visible', false));
+      );
 
       group.append('text').attr('class', 'statistics-donut-value')
         .attr('text-anchor', 'middle').attr('y', -2)
@@ -120,7 +143,11 @@ function DonutChart({ title, series, data, selectedItem, onSelect }) {
   return (
     <div className="statistics-comparison-item">
       <h3>{title}</h3>
-      <ChartContainer chartRef={chartRef} className="statistics-donut-chart" />
+      <ChartContainer
+        chartRef={chartRef}
+        className="statistics-donut-chart"
+        label={`${title} vulnerability label chart`}
+      />
       <div className="statistics-class-counts">
         <span><i className="statistics-count-vulnerable" />Vulnerable <strong>{formatNumber(vulnerable)}</strong></span>
         <span><i className="statistics-count-safe" />Non-vulnerable <strong>{formatNumber(nonVulnerable)}</strong></span>
@@ -180,6 +207,7 @@ function GroupedColumnChart({
       const y = d3.scaleLinear().domain([0, maximum]).nice()
         .range([height - margin.bottom, margin.top]);
       const svg = d3.select(container).selectAll('svg').data([null]).join('svg')
+        .attr('aria-label', `${chartName} grouped column chart`)
         .attr('viewBox', `0 0 ${width} ${height}`).attr('role', 'img');
       svg.selectAll('*').remove();
       const tooltip = d3.select(container).select('.statistics-tooltip');
@@ -205,7 +233,7 @@ function GroupedColumnChart({
         { label: item.label, value: item.processed, series: 'processed' },
       ]);
 
-      svg.append('g').selectAll('rect').data(marks).join('rect')
+      const bars = svg.append('g').selectAll('rect').data(marks).join('rect')
         .attr('x', (item) => x(item.label) + seriesScale(item.series))
         .attr('y', (item) => y(item.value))
         .attr('width', seriesScale.bandwidth())
@@ -220,8 +248,15 @@ function GroupedColumnChart({
             selectedItem.label !== item.label) ? 0.25 : 1
         )
         .style('cursor', 'pointer')
-        .on('click', (_, item) =>
-          onSelect({
+        .on('pointermove', (event, item) =>
+          showTooltip(tooltip, event, item, unit)
+        )
+        .on('pointerleave', () => tooltip.classed('is-visible', false));
+
+      makeInteractive(
+        bars,
+        (item) => `${item.series}, ${item.label}, ${formatNumber(item.value)} ${unit}`,
+        (item) => onSelect({
             chart: chartName,
             series: item.series,
             label: item.label,
@@ -229,16 +264,18 @@ function GroupedColumnChart({
             unit,
             total: totals[item.series],
           })
-        )
-        .on('pointermove', (event, item) =>
-          showTooltip(tooltip, event, item, unit)
-        )
-        .on('pointerleave', () => tooltip.classed('is-visible', false));
+      );
     },
     JSON.stringify({ rows, selectedItem, chartName })
   );
 
-  return <ChartContainer chartRef={chartRef} className="statistics-column-chart" />;
+  return (
+    <ChartContainer
+      chartRef={chartRef}
+      className="statistics-column-chart"
+      label={`${chartName} grouped column chart`}
+    />
+  );
 }
 
 function LollipopChart({
@@ -274,6 +311,7 @@ function LollipopChart({
       const y = d3.scaleBand().domain(rows.map((item) => item.label))
         .range([margin.top, height - margin.bottom]).padding(0.35);
       const svg = d3.select(container).selectAll('svg').data([null]).join('svg')
+        .attr('aria-label', 'Covered CWE groups lollipop chart')
         .attr('viewBox', `0 0 ${width} ${height}`).attr('role', 'img');
       svg.selectAll('*').remove();
       const tooltip = d3.select(container).select('.statistics-tooltip');
@@ -309,7 +347,7 @@ function LollipopChart({
           item.series === 'actual' ? ACTUAL_COLOR : PROCESSED_COLOR
         )
         .attr('stroke-width', 2);
-      svg.append('g').selectAll('circle').data(marks).join('circle')
+      const dots = svg.append('g').selectAll('circle').data(marks).join('circle')
         .attr('cx', (item) => x(item.value))
         .attr('cy', (item) => y(item.label) + y.bandwidth() / 2 + item.offset)
         .attr('r', (item) =>
@@ -328,8 +366,15 @@ function LollipopChart({
             selectedItem.label !== item.label) ? 0.25 : 1
         )
         .style('cursor', 'pointer')
-        .on('click', (_, item) =>
-          onSelect({
+        .on('pointermove', (event, item) =>
+          showTooltip(tooltip, event, item, 'samples')
+        )
+        .on('pointerleave', () => tooltip.classed('is-visible', false));
+
+      makeInteractive(
+        dots,
+        (item) => `${item.series}, ${item.label}, ${formatNumber(item.value)} samples`,
+        (item) => onSelect({
             chart: 'Covered CWE groups',
             series: item.series,
             label: item.label,
@@ -337,11 +382,7 @@ function LollipopChart({
             unit: 'samples',
             total: totals[item.series],
           })
-        )
-        .on('pointermove', (event, item) =>
-          showTooltip(tooltip, event, item, 'samples')
-        )
-        .on('pointerleave', () => tooltip.classed('is-visible', false));
+      );
 
       svg.append('g').selectAll('text').data(marks).join('text')
         .attr('class', 'statistics-lollipop-value')
@@ -363,7 +404,13 @@ function LollipopChart({
     JSON.stringify({ rows, selectedItem })
   );
 
-  return <ChartContainer chartRef={chartRef} className="statistics-lollipop-chart" />;
+  return (
+    <ChartContainer
+      chartRef={chartRef}
+      className="statistics-lollipop-chart"
+      label="Covered CWE groups lollipop chart"
+    />
+  );
 }
 
 function ModelComparisonChart({
@@ -395,6 +442,7 @@ function ModelComparisonChart({
         .range([margin.top, height - margin.bottom])
         .padding(0.34);
       const svg = d3.select(container).selectAll('svg').data([null]).join('svg')
+        .attr('aria-label', `${metricLabel} model comparison chart`)
         .attr('viewBox', `0 0 ${width} ${height}`).attr('role', 'img');
       svg.selectAll('*').remove();
       const tooltip = d3.select(container).select('.statistics-tooltip');
@@ -420,16 +468,6 @@ function ModelComparisonChart({
           selectedItem.label !== item.model ? 0.3 : 1
         )
         .style('cursor', 'pointer')
-        .on('click', (_, item) =>
-          onSelect({
-            chart: 'Model performance',
-            series: 'model',
-            label: item.model,
-            value: item[metric] * 100,
-            unit: '%',
-            total: 100,
-          })
-        )
         .on('pointermove', (event, item) =>
           showTooltip(
             tooltip,
@@ -439,6 +477,19 @@ function ModelComparisonChart({
           )
         )
         .on('pointerleave', () => tooltip.classed('is-visible', false));
+
+      makeInteractive(
+        bars,
+        (item) => `${item.model}, ${metricLabel}, ${(item[metric] * 100).toFixed(2)}%`,
+        (item) => onSelect({
+            chart: 'Model performance',
+            series: 'model',
+            label: item.model,
+            value: item[metric] * 100,
+            unit: '%',
+            total: 100,
+          })
+      );
 
       bars.transition().duration(600)
         .attr('width', (item) => x(item[metric]) - margin.left);
@@ -453,7 +504,13 @@ function ModelComparisonChart({
     JSON.stringify({ rankedModels, metric, selectedItem })
   );
 
-  return <ChartContainer chartRef={chartRef} className="statistics-model-chart" />;
+  return (
+    <ChartContainer
+      chartRef={chartRef}
+      className="statistics-model-chart"
+      label={`${metricLabel} model comparison chart`}
+    />
+  );
 }
 
 function ComparisonLegend() {
@@ -513,9 +570,40 @@ function Statistics() {
     setSelectedItem(isSame ? null : item);
   }
 
+  if (isLoading) {
+    return (
+      <main className="statistics-page">
+        <header className="statistics-header">
+          <div className="statistics-title">
+            <h1>Dataset Statistics</h1>
+            <p>Explore the data used to train and evaluate our vulnerability detection models.</p>
+          </div>
+          <div className="statistics-connection">
+            <span />
+            Loading dataset summary
+          </div>
+        </header>
+        <section aria-label="Loading statistics" className="statistics-skeleton">
+          <div className="statistics-skeleton-overview">
+            {[0, 1, 2, 3].map((item) => <i key={item} />)}
+          </div>
+          <div className="statistics-skeleton-panel" />
+          <div className="statistics-skeleton-grid">
+            <i />
+            <i />
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="statistics-page">
       <header className="statistics-header">
+        <div className="statistics-title">
+          <h1>Dataset Statistics</h1>
+          <p>Explore the data used to train and evaluate our vulnerability detection models.</p>
+        </div>
         <div className={`statistics-connection ${errorMessage ? 'statistics-connection-error' : ''}`}>
           <span />
           {isLoading && 'Loading dataset summary'}
@@ -629,8 +717,8 @@ function Statistics() {
         <article className="statistics-panel statistics-panel-wide statistics-model-panel">
           <div className="statistics-panel-heading statistics-model-heading">
             <div>
-              <p>Assignment 2 Outcomes</p>
-              <h2>Model Performance Comparison</h2>
+              <p>Assignment 2 Traditional Baselines</p>
+              <h2>Traditional Model Comparison</h2>
             </div>
             <div className="statistics-metric-control" aria-label="Performance metric">
               {MODEL_METRICS.map((metric) => (
@@ -662,7 +750,7 @@ function Statistics() {
               </strong>
             </div>
             <div>
-              <span>Models evaluated</span>
+              <span>Traditional models evaluated</span>
               <strong>{modelComparison.length}</strong>
             </div>
           </div>
@@ -673,8 +761,10 @@ function Statistics() {
             onSelect={handleSelect}
           />
           <p className="statistics-panel-note">
-            Scores come from the balanced 24,848-sample evaluation set recorded
-            in <strong>baseline_binary.ipynb</strong>.
+            These five scores cover the traditional baseline models evaluated
+            on the balanced 24,848-sample set in
+            <strong> baseline_binary.ipynb</strong>. Handcrafted-feature and
+            CodeBERT experiments use separate evaluation results.
           </p>
         </article>
       </section>

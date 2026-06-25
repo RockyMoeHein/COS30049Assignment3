@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -141,6 +142,7 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
 class ModelService:
     def __init__(self) -> None:
         self._loaded_models: dict[str, Any] = {}
+        self._codebert_tokenizer: Any | None = None
         self.default_model_key = "features_randomforest"
         self.history: list[dict[str, Any]] = []
 
@@ -248,6 +250,7 @@ class ModelService:
 
     def _load_model(self, config: ModelConfig) -> Any:
         if config.key not in self._loaded_models:
+            self._release_codebert_models()
             if not config.path.exists():
                 raise FileNotFoundError(f"Model file not found: {config.path}")
             self._loaded_models[config.key] = joblib.load(config.path)
@@ -269,23 +272,36 @@ class ModelService:
             if not config.path.exists():
                 raise FileNotFoundError(f"Model file not found: {config.path}")
 
-            tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+            # CodeBERT checkpoints are large, so release traditional models
+            # before loading one transformer variation.
+            self._loaded_models.clear()
+            gc.collect()
+
+            if self._codebert_tokenizer is None:
+                self._codebert_tokenizer = AutoTokenizer.from_pretrained(
+                    "microsoft/codebert-base"
+                )
+
             model_config = AutoConfig.from_pretrained(
                 "microsoft/codebert-base",
                 num_labels=2,
             )
+
             model = AutoModelForSequenceClassification.from_config(model_config)
             state_dict = torch.load(
                 config.path,
                 map_location="cpu",
                 weights_only=True,
+                mmap=True,
             )
             model.load_state_dict(state_dict)
+            del state_dict
+            gc.collect()
             model.eval()
-            self._loaded_models[config.key] = (tokenizer, model)
+            self._loaded_models[config.key] = model
 
-        tokenizer, model = self._loaded_models[config.key]
-        inputs = tokenizer(
+        model = self._loaded_models[config.key]
+        inputs = self._codebert_tokenizer(
             code,
             truncation=True,
             padding="max_length",
@@ -300,6 +316,17 @@ class ModelService:
         prediction = int(torch.argmax(probabilities).item())
         vulnerable_probability = round(float(probabilities[1].item()), 4)
         return prediction, vulnerable_probability
+
+    def _release_codebert_models(self) -> None:
+        codebert_keys = [
+            key
+            for key in self._loaded_models
+            if MODEL_CONFIGS[key].model_type == "codebert"
+        ]
+        for key in codebert_keys:
+            del self._loaded_models[key]
+        if codebert_keys:
+            gc.collect()
 
     @staticmethod
     def _build_input_dataframe(

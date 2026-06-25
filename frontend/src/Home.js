@@ -18,10 +18,10 @@ function Home({ goToAnalyze, goToAbout }) {
           </h1>
 
           <p>
-            This web application uses our trained Assignment 2 model to predict
-            whether a C source-code snippet is vulnerable or non-vulnerable. It
-            focuses on memory and pointer-related risks such as buffer overflow,
-            unsafe memory access, and NULL pointer issues.
+            This web application uses trained Assignment 2 model families to
+            predict whether a C source-code snippet is vulnerable or
+            non-vulnerable. Users can compare classical machine-learning models
+            and CodeBERT variations.
           </p>
 
           <div className="home-buttons">
@@ -65,45 +65,44 @@ function Home({ goToAnalyze, goToAbout }) {
 
           <div className="home-code-body">
             <p>
-              <span>1</span> char buffer[20];
+              <span>1</span> #include &lt;string.h&gt;
             </p>
 
             <p>
-              <span>2</span> char userInput[100];
-            </p>
-
-            <p className="home-danger-line">
-              <span>3</span> strcpy(buffer, userInput);
-              <b>⚠</b>
+              <span>2</span> int main(void) {"{"}
             </p>
 
             <p>
-              <span>4</span> features = vectorize(code);
-            </p>
-
-            <p className="home-scan-line">
-              <span>5</span> prediction = model.predict(features);
+              <span>3</span> char buffer[20];
             </p>
 
             <p>
-              <span>6</span> return result;
+              <span>4</span> char userInput[100];
+            </p>
+
+            <p>
+              <span>5</span> strcpy(buffer, userInput);
+            </p>
+
+            <p>
+              <span>6</span> return 0; {"}"}
             </p>
           </div>
 
           <div className="home-code-footer">
-            <div className="home-ml-status">⚙ MODEL ACTIVE</div>
-            <div className="home-issue-status">Potential Buffer Risk</div>
+            <div className="home-ml-status">BINARY CLASSIFICATION</div>
+            <div className="home-issue-status">Vulnerable</div>
           </div>
         </div>
       </section>
 
       {/* MODEL FOCUS SECTION */}
       <section className="home-analysis-section">
-        <h2>What Our Model Analyzes</h2>
+        <h2>What Our Models Analyze</h2>
 
         <p className="home-section-text">
-          The model analyzes C source-code snippets using code-based text
-          features and machine learning classification.
+          The system analyzes C source-code snippets using classical text
+          features, optional security features, and CodeBERT representations.
         </p>
 
         <div className="home-feature-grid">
@@ -127,10 +126,10 @@ function Home({ goToAnalyze, goToAbout }) {
 
           <div className="home-feature-card">
             <div className="home-feature-icon">▣</div>
-            <h3>TF-IDF Based Features</h3>
+            <h3>Classical Models + CodeBERT</h3>
             <p>
-              Uses word-level and character-level patterns to help the model
-              understand code tokens and syntax.
+              Supports TF-IDF machine-learning pipelines and fine-tuned
+              CodeBERT checkpoints for binary vulnerability classification.
             </p>
           </div>
         </div>
@@ -138,11 +137,11 @@ function Home({ goToAnalyze, goToAbout }) {
 
       {/* WORKFLOW SECTION */}
       <section className="home-workflow-section">
-        <h2>How the Web App Uses the Model</h2>
+        <h2>How the Web App Uses the Models</h2>
 
         <p className="home-section-text">
           The frontend collects user code, the backend processes it, and the
-          trained model returns a vulnerability prediction.
+          selected trained model returns a vulnerability prediction.
         </p>
 
         <div className="workflow-grid">
@@ -158,8 +157,8 @@ function Home({ goToAnalyze, goToAbout }) {
             <span>02</span>
             <h3>Process Input</h3>
             <p>
-              The backend prepares the code and converts it into model-ready
-              features.
+              The backend prepares the code using the preprocessing required
+              by the selected model family.
             </p>
           </div>
 
@@ -167,7 +166,7 @@ function Home({ goToAnalyze, goToAbout }) {
             <span>03</span>
             <h3>Run Prediction</h3>
             <p>
-              The trained model predicts whether the code is vulnerable or
+              The selected model predicts whether the code is vulnerable or
               non-vulnerable.
             </p>
           </div>
