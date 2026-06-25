@@ -148,3 +148,6 @@ __pycache__/
 .venv/
 .venv*/
 venv/
+
+# macOS metadata
+.DS_Store

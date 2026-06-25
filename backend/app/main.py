@@ -3,12 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.schemas import (
     DefaultModelRequest,
+    DatasetVisualizationSummary,
     MessageResponse,
     ModelInfo,
     PredictionRequest,
     PredictionResponse,
     VisualizationSummary,
 )
+from app.services.dataset_service import DatasetService
 from app.services.model_service import ModelService
 
 
@@ -32,6 +34,7 @@ app.add_middleware(
 )
 
 model_service = ModelService()
+dataset_service = DatasetService()
 
 
 @app.get("/", response_model=MessageResponse)
@@ -76,6 +79,22 @@ def predict(payload: PredictionRequest) -> dict:
 @app.get("/visualizations/summary", response_model=VisualizationSummary)
 def visualization_summary() -> dict:
     return model_service.visualization_summary()
+
+
+@app.get(
+    "/visualizations/dataset-summary",
+    response_model=DatasetVisualizationSummary,
+)
+def dataset_visualization_summary() -> dict:
+    try:
+        return dataset_service.get_summary()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Dataset summary failed: {exc}",
+        ) from exc
 
 
 @app.delete("/history", response_model=MessageResponse)
