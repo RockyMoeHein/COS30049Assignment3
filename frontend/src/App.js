@@ -1,7 +1,12 @@
 import logo from './logo.svg';
+import Analysis from './Analysis';
 import './App.css';
 
 function App() {
+  if (window.location.pathname === '/analysis-preview') {
+    return <Analysis />;
+  }
+
   return (
     <div className="App">
       <header className="App-header">

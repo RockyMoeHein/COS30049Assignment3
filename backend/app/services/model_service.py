@@ -22,6 +22,8 @@ class ModelConfig:
     path: Path
     model_type: str
     uses_features: bool
+    family: str
+    variant: str
 
 
 MODEL_CONFIGS: dict[str, ModelConfig] = {
@@ -31,6 +33,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "traditional" / "randomforest.pkl",
         "traditional",
         False,
+        "random_forest",
+        "standard",
     ),
     "xgboost": ModelConfig(
         "xgboost",
@@ -38,6 +42,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "traditional" / "xgboost.pkl",
         "traditional",
         False,
+        "xgboost",
+        "standard",
     ),
     "logistic": ModelConfig(
         "logistic",
@@ -45,6 +51,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "traditional" / "logistic.pkl",
         "traditional",
         False,
+        "logistic_regression",
+        "standard",
     ),
     "linear_svc": ModelConfig(
         "linear_svc",
@@ -52,6 +60,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "traditional" / "linearSVC.pkl",
         "traditional",
         False,
+        "linear_svc",
+        "standard",
     ),
     "ensemble": ModelConfig(
         "ensemble",
@@ -59,6 +69,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "traditional" / "ensemble.pkl",
         "traditional",
         False,
+        "ensemble",
+        "standard",
     ),
     "features_randomforest": ModelConfig(
         "features_randomforest",
@@ -66,6 +78,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "handcrafted_features" / "features_randomforest.pkl",
         "handcrafted_features",
         True,
+        "random_forest",
+        "handcrafted",
     ),
     "features_xgboost": ModelConfig(
         "features_xgboost",
@@ -73,6 +87,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "handcrafted_features" / "features_xgboost.pkl",
         "handcrafted_features",
         True,
+        "xgboost",
+        "handcrafted",
     ),
     "features_logistic": ModelConfig(
         "features_logistic",
@@ -80,6 +96,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "handcrafted_features" / "features_logistic.pkl",
         "handcrafted_features",
         True,
+        "logistic_regression",
+        "handcrafted",
     ),
     "features_linear_svc": ModelConfig(
         "features_linear_svc",
@@ -87,6 +105,8 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "handcrafted_features" / "features_linearSVC.pkl",
         "handcrafted_features",
         True,
+        "linear_svc",
+        "handcrafted",
     ),
     "features_ensemble": ModelConfig(
         "features_ensemble",
@@ -94,6 +114,26 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         MODEL_DIR / "handcrafted_features" / "features_ensemble.pkl",
         "handcrafted_features",
         True,
+        "ensemble",
+        "handcrafted",
+    ),
+    "codebert": ModelConfig(
+        "codebert",
+        "CodeBERT Binary-Balanced",
+        MODEL_DIR / "codeBERT" / "codebert_vuln_best.pt",
+        "codebert",
+        False,
+        "codebert",
+        "standard",
+    ),
+    "codebert_cwe_balanced": ModelConfig(
+        "codebert_cwe_balanced",
+        "CodeBERT CWE-Balanced",
+        MODEL_DIR / "codeBERT" / "codeBERT-balanced.pt",
+        "codebert",
+        False,
+        "codebert",
+        "cwe_balanced",
     ),
 }
 
@@ -114,9 +154,13 @@ class ModelService:
                     "name": config.name,
                     "model_type": config.model_type,
                     "uses_features": config.uses_features,
-                    "supports_probability": None
-                    if model is None
-                    else hasattr(model, "predict_proba"),
+                    "family": config.family,
+                    "variant": config.variant,
+                    "supports_probability": (
+                        True
+                        if config.model_type == "codebert"
+                        else None if model is None else hasattr(model, "predict_proba")
+                    ),
                 }
             )
         return models
@@ -131,12 +175,14 @@ class ModelService:
     def predict(self, code: str, model_key: str | None = None) -> dict[str, Any]:
         selected_key = model_key or self.default_model_key
         config = self._get_config(selected_key)
-        model = self._load_model(config)
         features = extract_features(code)
-        input_df = self._build_input_dataframe(code, features, config.uses_features)
-
-        prediction = int(model.predict(input_df)[0])
-        probability = self._predict_probability(model, input_df)
+        if config.model_type == "codebert":
+            prediction, probability = self._predict_codebert(code, config)
+        else:
+            model = self._load_model(config)
+            input_df = self._build_input_dataframe(code, features, config.uses_features)
+            prediction = int(model.predict(input_df)[0])
+            probability = self._predict_probability(model, input_df)
         label = "VULNERABLE" if prediction == 1 else "NON_VULNERABLE"
         confidence = self._confidence_percent(prediction, probability)
         created_at = datetime.now(timezone.utc)
@@ -206,6 +252,54 @@ class ModelService:
                 raise FileNotFoundError(f"Model file not found: {config.path}")
             self._loaded_models[config.key] = joblib.load(config.path)
         return self._loaded_models[config.key]
+
+    def _predict_codebert(
+        self,
+        code: str,
+        config: ModelConfig,
+    ) -> tuple[int, float]:
+        import torch
+        from transformers import (
+            AutoConfig,
+            AutoModelForSequenceClassification,
+            AutoTokenizer,
+        )
+
+        if config.key not in self._loaded_models:
+            if not config.path.exists():
+                raise FileNotFoundError(f"Model file not found: {config.path}")
+
+            tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+            model_config = AutoConfig.from_pretrained(
+                "microsoft/codebert-base",
+                num_labels=2,
+            )
+            model = AutoModelForSequenceClassification.from_config(model_config)
+            state_dict = torch.load(
+                config.path,
+                map_location="cpu",
+                weights_only=True,
+            )
+            model.load_state_dict(state_dict)
+            model.eval()
+            self._loaded_models[config.key] = (tokenizer, model)
+
+        tokenizer, model = self._loaded_models[config.key]
+        inputs = tokenizer(
+            code,
+            truncation=True,
+            padding="max_length",
+            max_length=512,
+            return_tensors="pt",
+        )
+
+        with torch.no_grad():
+            logits = model(**inputs).logits
+            probabilities = torch.softmax(logits, dim=1)[0]
+
+        prediction = int(torch.argmax(probabilities).item())
+        vulnerable_probability = round(float(probabilities[1].item()), 4)
+        return prediction, vulnerable_probability
 
     @staticmethod
     def _build_input_dataframe(
