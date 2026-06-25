@@ -96,3 +96,55 @@ class VisualizationSummary(BaseModel):
     model_usage: dict[str, int]
     latest_predictions: list[HistoryItem]
     risk_feature_catalog: list[dict[str, Any]]
+
+
+class DatasetScope(BaseModel):
+    task: str
+    target_classes: list[str]
+    covered_cwes: list[str]
+    sources: list[str]
+
+
+class DatasetPartitionSummary(BaseModel):
+    total_samples: int
+    label_counts: dict[str, int]
+    source_counts: dict[str, int]
+    source: str
+    csv_available: bool | None = None
+
+
+class CodeLengthSummary(BaseModel):
+    average_characters: float
+    median_characters: int
+    maximum_characters: int
+    buckets: dict[str, int]
+
+
+class EvaluationDatasetSummary(DatasetPartitionSummary):
+    cwe_counts: dict[str, int]
+    code_length: CodeLengthSummary
+
+
+class ExternalDatasetSummary(BaseModel):
+    total_samples: int
+    top_cwes: dict[str, int]
+    note: str
+
+
+class ModelPerformanceSummary(BaseModel):
+    model: str
+    accuracy: float
+    vulnerable_precision: float
+    vulnerable_recall: float
+    vulnerable_f1: float
+    macro_f1: float
+
+
+class DatasetVisualizationSummary(BaseModel):
+    scope: DatasetScope
+    training: EvaluationDatasetSummary
+    processed_training: EvaluationDatasetSummary
+    evaluation: EvaluationDatasetSummary
+    processed_evaluation: EvaluationDatasetSummary
+    model_comparison: list[ModelPerformanceSummary]
+    external_reference: ExternalDatasetSummary
