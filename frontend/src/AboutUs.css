@@ -1,0 +1,193 @@
+.about-page {
+  max-width: 1100px;
+  margin: auto;
+  padding: 52px 20px 95px;
+}
+
+.about-hero {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.project-badge {
+  display: inline-block;
+  color: #6ee7b7;
+  border: 1px solid #134e4a;
+  background: #0f172a;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  margin-bottom: 20px;
+}
+
+.about-hero h1 {
+  color: #c4b5fd;
+  font-size: 40px;
+  line-height: 1.08;
+  margin-bottom: 18px;
+}
+
+.about-hero p {
+  color: #cbd5e1;
+  max-width: 700px;
+  margin: auto;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.about-section {
+  margin-bottom: 55px;
+}
+
+.about-section h2 {
+  text-align: center;
+  color: #e0e7ff;
+  font-size: 18px;
+  margin-bottom: 28px;
+}
+
+/* PROJECT GOALS */
+.goal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.goal-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  padding: 24px;
+  text-align: center;
+  min-height: 150px;
+}
+
+.goal-icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+.goal-card h3 {
+  color: #c4b5fd;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.goal-card p {
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* CORE TECHNOLOGIES */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.tech-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  padding: 22px;
+  min-height: 110px;
+}
+
+.small-icon {
+  color: #a78bfa;
+  font-size: 13px;
+}
+
+.tech-card h3 {
+  color: #c4b5fd;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.tech-card p {
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* SYSTEM MODULES */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.module-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  padding: 20px;
+  text-align: center;
+}
+
+.module-card h3 {
+  color: #c4b5fd;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.module-card p {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* TEAM */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.team-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  padding: 24px;
+  text-align: center;
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #111827;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+}
+
+.team-card h3 {
+  color: #e0e7ff;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.team-card p {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .goal-grid,
+  .tech-grid,
+  .team-grid,
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-hero h1 {
+    font-size: 32px;
+  }
+}
