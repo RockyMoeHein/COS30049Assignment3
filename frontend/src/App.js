@@ -1,23 +1,53 @@
-import React from "react";
-import About from "./About";
+import React, { useState } from "react";
+import Home from "./Home";
+import Analysis from "./Analysis";
+import AboutUs from "./AboutUs";
 import "./App.css";
 
 function App() {
+  const [page, setPage] = useState("home");
+
   return (
     <div className="app">
       <nav className="navbar">
         <div className="nav-logo">Code Vulnerability Detector</div>
 
         <div className="nav-menu">
-          <button>Home</button>
-          <button>Analyze</button>
-          <button className="active">About</button>
+          <button
+            className={page === "home" ? "active" : ""}
+            onClick={() => setPage("home")}
+          >
+            Home
+          </button>
+
+          <button
+            className={page === "analysis" ? "active" : ""}
+            onClick={() => setPage("analysis")}
+          >
+            Analyze
+          </button>
+
+          <button
+            className={page === "about" ? "active" : ""}
+            onClick={() => setPage("about")}
+          >
+            About
+          </button>
         </div>
 
-        <div></div>
+        
       </nav>
 
-      <About />
+      {page === "home" && (
+        <Home
+          goToAnalyze={() => setPage("analysis")}
+          goToAbout={() => setPage("about")}
+        />
+      )}
+
+      {page === "analysis" && <Analysis />}
+
+      {page === "about" && <AboutUs />}
 
       <footer className="footer">
         <div className="footer-brand">
