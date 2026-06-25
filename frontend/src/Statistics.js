@@ -513,15 +513,6 @@ function ModelComparisonChart({
   );
 }
 
-function ComparisonLegend() {
-  return (
-    <div className="statistics-comparison-legend">
-      <span><i className="statistics-key-actual" />Actual Dataset</span>
-      <span><i className="statistics-key-processed" />Model-Processed</span>
-    </div>
-  );
-}
-
 function Statistics() {
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -619,34 +610,37 @@ function Statistics() {
         </section>
       )}
 
-      <section className="statistics-overview">
+      <section className="statistics-data-flow" aria-label="Dataset processing flow">
         {[
-          ['Original Training', actual?.total_samples, 'Before sampling and cleaning'],
-          ['Final Model Input', processed?.total_samples, '59,983 safe + 59,992 vulnerable'],
-          ['Actual Evaluation', evaluation?.total_samples, 'Validation and deduplicated ZEN'],
-          ['Balanced Evaluation', processedEvaluation?.total_samples, 'Used after model training'],
-        ].map(([label, value, note]) => (
+          ['01', 'Original Training', actual?.total_samples, 'Raw combined dataset'],
+          ['02', 'Model Input', processed?.total_samples, 'Balanced training sample'],
+          ['03', 'Evaluation', evaluation?.total_samples, 'Validation and ZEN data'],
+          ['04', 'Balanced Evaluation', processedEvaluation?.total_samples, 'Final test sample'],
+        ].map(([step, label, value, note]) => (
           <article key={label}>
-            <span>{label}</span>
-            <strong>{formatNumber(value)}</strong>
-            <small>{note}</small>
+            <span className="statistics-flow-step">{step}</span>
+            <div>
+              <span>{label}</span>
+              <strong>{formatNumber(value)}</strong>
+              <small>{note}</small>
+            </div>
           </article>
         ))}
       </section>
 
-      <ComparisonLegend />
-
-      <section className="statistics-selection" aria-live="polite">
-        <div>
-          <p>Selected Data</p>
-          <h2>{selectedItem ? selectedItem.label : 'Click any chart item'}</h2>
-          <span>
-            {selectedItem
-              ? `${selectedItem.series === 'actual' ? 'Actual Dataset' : selectedItem.series === 'processed' ? 'Model-Processed' : 'Assignment 2'} · ${selectedItem.chart}`
-              : 'Select either dataset series to inspect its count and share.'}
-          </span>
-        </div>
-        {selectedItem && (
+      {selectedItem && (
+        <section className="statistics-selection" aria-live="polite">
+          <div>
+            <p>{selectedItem.chart}</p>
+            <h2>{selectedItem.label}</h2>
+            <span>
+              {selectedItem.series === 'actual'
+                ? 'Actual Dataset'
+                : selectedItem.series === 'processed'
+                ? 'Model-Processed'
+                : 'Assignment 2 Model'}
+            </span>
+          </div>
           <div className="statistics-selection-values">
             <strong>{formatNumber(selectedItem.value)}</strong>
             <span>{selectedItem.unit}</span>
@@ -655,10 +649,17 @@ function Statistics() {
                 ? 'Selected performance score'
                 : `${((selectedItem.value / selectedItem.total) * 100).toFixed(1)}% of this dataset`}
             </small>
-            <button type="button" onClick={() => setSelectedItem(null)}>Clear selection</button>
+            <button
+              aria-label="Close selected data"
+              onClick={() => setSelectedItem(null)}
+              title="Close"
+              type="button"
+            >
+              ×
+            </button>
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       <section className="statistics-layout">
         <article className="statistics-panel statistics-panel-wide">
