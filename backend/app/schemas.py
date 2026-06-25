@@ -30,8 +30,10 @@ class PredictionRequest(BaseModel):
 class ModelInfo(BaseModel):
     key: str
     name: str
-    model_type: Literal["traditional", "handcrafted_features"]
+    model_type: Literal["traditional", "handcrafted_features", "codebert"]
     uses_features: bool
+    family: str
+    variant: str
     supports_probability: bool | None = None
 
 
