@@ -53,6 +53,11 @@ const METRIC_FIELDS = [
   ["Tokens", "token_count"],
 ];
 
+const FALLBACK_MODEL_OPTIONS = Object.values(MODEL_KEYS).flat();
+const FALLBACK_COMPARISON_OPTIONS = FALLBACK_MODEL_OPTIONS.filter(
+  (key) => !key.startsWith("codebert")
+);
+
 function riskName(value) {
   if (value >= 2) return "High";
   if (value === 1) return "Low";
@@ -65,6 +70,49 @@ function getErrorMessage(data, fallback) {
   return fallback;
 }
 
+function explainRisk(features) {
+  if (!features) return [];
+
+  const notes = [];
+  if (features.count_unsafe_buffer_funcs > 0) {
+    notes.push({
+      level: "High",
+      title: "Unsafe buffer function detected",
+      detail: `${features.count_unsafe_buffer_funcs} unsafe call(s), such as strcpy-style memory copying, were found.`,
+    });
+  }
+  if (features.buffer_memory_risk_level > 0) {
+    notes.push({
+      level: riskName(features.buffer_memory_risk_level),
+      title: "Buffer or memory pattern matched",
+      detail: "The snippet contains syntax patterns related to buffer handling or memory operations.",
+    });
+  }
+  if (features.null_pointer_risk_level > 0) {
+    notes.push({
+      level: riskName(features.null_pointer_risk_level),
+      title: "NULL pointer risk signal",
+      detail: "The extracted features found pointer usage that may require stronger NULL validation.",
+    });
+  }
+  if (features.count_validation_signals > 0) {
+    notes.push({
+      level: "Positive",
+      title: "Validation signal present",
+      detail: `${features.count_validation_signals} validation-related signal(s) may reduce risk.`,
+    });
+  }
+
+  if (notes.length === 0) {
+    notes.push({
+      level: "Low",
+      title: "No major handcrafted risk signal",
+      detail: "The feature extractor did not find strong buffer, pointer, or validation warning patterns.",
+    });
+  }
+  return notes.slice(0, 4);
+}
+
 function Analysis() {
   const fileInput = useRef(null);
   const [code, setCode] = useState("");
@@ -75,6 +123,9 @@ function Analysis() {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [comparisonLoading, setComparisonLoading] = useState(false);
+  const [comparisonResults, setComparisonResults] = useState([]);
+  const [comparisonProgress, setComparisonProgress] = useState("");
   const [elapsedTime, setElapsedTime] = useState(null);
   const [apiStatus, setApiStatus] = useState("connecting");
 
@@ -156,6 +207,8 @@ function Analysis() {
         submitted_code: code.trim(),
       };
       setResult(completedAnalysis);
+      setComparisonResults([]);
+      setComparisonProgress("");
       setHistory((current) => [completedAnalysis, ...current].slice(0, 3));
       setElapsedTime((performance.now() - startedAt) / 1000);
     } catch (requestError) {
@@ -170,6 +223,55 @@ function Analysis() {
       window.clearTimeout(timeout);
       setLoading(false);
     }
+  }
+
+  async function compareModels() {
+    const validationError = validateCode();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const availableKeys = models.length
+      ? models
+          .filter((model) => model.model_type !== "codebert")
+          .map((model) => model.key)
+      : FALLBACK_COMPARISON_OPTIONS;
+
+    setComparisonLoading(true);
+    setComparisonResults([]);
+    setComparisonProgress(`0 / ${availableKeys.length} models completed`);
+    setError("");
+
+    const completed = [];
+    for (let index = 0; index < availableKeys.length; index += 1) {
+      const key = availableKeys[index];
+      try {
+        const response = await fetch(`${API_URL}/predict`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: code.trim(), model_key: key }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(getErrorMessage(data, "Prediction failed."));
+        }
+        completed.push({ ...data, error: "" });
+      } catch (requestError) {
+        completed.push({
+          model_key: key,
+          model_name: models.find((model) => model.key === key)?.name || key,
+          label: "FAILED",
+          confidence_percent: null,
+          vulnerable_probability: null,
+          error: requestError.message,
+        });
+      }
+      setComparisonResults([...completed]);
+      setComparisonProgress(`${index + 1} / ${availableKeys.length} models completed`);
+    }
+
+    setComparisonLoading(false);
   }
 
   function loadFile(event) {
@@ -191,6 +293,8 @@ function Analysis() {
     reader.onload = () => {
       setCode(String(reader.result).slice(0, MAX_CODE_LENGTH));
       setResult(null);
+      setComparisonResults([]);
+      setComparisonProgress("");
       setError("");
       setElapsedTime(null);
     };
@@ -202,6 +306,8 @@ function Analysis() {
   function clearCode() {
     setCode("");
     setResult(null);
+    setComparisonResults([]);
+    setComparisonProgress("");
     setError("");
     setElapsedTime(null);
   }
@@ -232,7 +338,7 @@ function Analysis() {
           <p>Machine Learning Analysis</p>
           <h1>Analyze C/C++ Source Code</h1>
           <span>
-            Submit a code snippet to classify it and inspect the model's
+            Submit C/C++ code snippet to classify it and inspect the model's
             extracted risk indicators.
           </span>
         </div>
@@ -302,6 +408,8 @@ function Analysis() {
               onClick={() => {
                 setCode(EXAMPLE_CODE);
                 setResult(null);
+                setComparisonResults([]);
+                setComparisonProgress("");
                 setError("");
                 setElapsedTime(null);
               }}
@@ -327,6 +435,8 @@ function Analysis() {
             onChange={(event) => {
               setCode(event.target.value);
               setResult(null);
+              setComparisonResults([]);
+              setComparisonProgress("");
               setError("");
               setElapsedTime(null);
             }}
@@ -368,6 +478,19 @@ function Analysis() {
                   : "Analyzing..."
                 : "Analyze code"}
             </button>
+            <button
+              className="analysis-compare"
+              disabled={loading || comparisonLoading}
+              onClick={compareModels}
+              type="button"
+            >
+              {comparisonLoading ? "Comparing models..." : "Compare classical models"}
+            </button>
+            {comparisonProgress && (
+              <small className="analysis-comparison-progress">
+                {comparisonProgress}
+              </small>
+            )}
           </div>
         </div>
       </section>
@@ -424,6 +547,26 @@ function Analysis() {
           </div>
 
           <div className="analysis-detail-grid">
+            <article className="analysis-panel analysis-explanation-panel">
+              <div className="analysis-panel-heading">
+                <p>Model Explainability</p>
+                <h3>Why This Result?</h3>
+              </div>
+              <div className="analysis-explanation-list">
+                {explainRisk(result.features).map((item) => (
+                  <div key={item.title}>
+                    <b className={`explanation-level explanation-${item.level.toLowerCase()}`}>
+                      {item.level}
+                    </b>
+                    <span>
+                      <strong>{item.title}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </article>
+
             <article className="analysis-panel">
               <div className="analysis-panel-heading">
                 <p>Feature Extraction</p>
@@ -457,6 +600,43 @@ function Analysis() {
               </div>
             </article>
           </div>
+
+          {comparisonResults.length > 0 && (
+            <article className="analysis-comparison">
+              <div className="analysis-panel-heading">
+                <p>Model Comparison</p>
+                <h3>Same Snippet Across Classical Models</h3>
+                <span className="analysis-confidence-note">
+                  CodeBERT is excluded from this batch comparison because it is
+                  much larger and can be run from the model selector above.
+                </span>
+              </div>
+              <div className="analysis-comparison-grid">
+                {comparisonResults.map((item) => (
+                  <div
+                    className={
+                      item.label === "VULNERABLE"
+                        ? "is-vulnerable"
+                        : item.label === "NON_VULNERABLE"
+                        ? "is-safe"
+                        : "is-failed"
+                    }
+                    key={item.model_key}
+                  >
+                    <span>{item.model_name}</span>
+                    <strong>{item.label.replace("_", " ")}</strong>
+                    <small>
+                      {item.error
+                        ? item.error
+                        : item.confidence_percent == null
+                        ? "Confidence not available"
+                        : `${item.confidence_percent.toFixed(2)}% confidence`}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            </article>
+          )}
 
           {history.length > 1 && (
             <article className="analysis-history">

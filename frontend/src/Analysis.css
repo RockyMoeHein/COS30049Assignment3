@@ -276,6 +276,18 @@
   padding: 12px 18px;
 }
 
+.analysis-compare {
+  background: transparent;
+  border: 1px solid #2dd4c5;
+  border-radius: 4px;
+  color: #7de8dc;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  min-width: 190px;
+  padding: 11px 18px;
+}
+
 @keyframes analysis-pulse {
   0% { box-shadow: 0 0 0 0 rgba(245, 201, 107, 0.4); }
   70%, 100% { box-shadow: 0 0 0 7px rgba(245, 201, 107, 0); }
@@ -298,9 +310,21 @@
   background: #9d90ff;
 }
 
-.analysis-submit:disabled {
+.analysis-compare:hover {
+  background: rgba(45, 212, 197, 0.08);
+  color: #ffffff;
+}
+
+.analysis-submit:disabled,
+.analysis-compare:disabled {
   cursor: wait;
   opacity: 0.65;
+}
+
+.analysis-comparison-progress {
+  color: #91a0bc;
+  font-size: 11px;
+  text-align: right;
 }
 
 .analysis-empty {
@@ -350,7 +374,8 @@
 
 .analysis-summary-grid article,
 .analysis-panel,
-.analysis-history {
+.analysis-history,
+.analysis-comparison {
   background: #111c30;
   border: 1px solid #293754;
   border-radius: 6px;
@@ -398,12 +423,16 @@
 .analysis-detail-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 14px;
 }
 
 .analysis-panel {
   padding: 20px;
+}
+
+.analysis-explanation-panel {
+  grid-column: 1 / -1;
 }
 
 .analysis-panel-heading {
@@ -417,6 +446,57 @@
 .analysis-risk-list {
   display: grid;
   gap: 2px;
+}
+
+.analysis-explanation-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.analysis-explanation-list > div {
+  align-items: flex-start;
+  background: #0b1427;
+  border: 1px solid #27344f;
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+}
+
+.analysis-explanation-list span {
+  display: grid;
+  gap: 5px;
+}
+
+.analysis-explanation-list strong {
+  font-size: 13px;
+}
+
+.analysis-explanation-list small {
+  color: #8d9ab5;
+  line-height: 1.5;
+}
+
+.explanation-level {
+  border: 1px solid #354461;
+  border-radius: 4px;
+  flex: 0 0 auto;
+  font-size: 10px;
+  min-width: 60px;
+  padding: 6px 7px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.explanation-high {
+  border-color: #713b49;
+  color: #ff8994;
+}
+
+.explanation-low,
+.explanation-positive {
+  border-color: #29634f;
+  color: #73dfc2;
 }
 
 .analysis-risk-list > div {
@@ -497,6 +577,60 @@
   padding: 20px;
 }
 
+.analysis-comparison {
+  margin-top: 14px;
+  padding: 20px;
+}
+
+.analysis-comparison-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.analysis-comparison-grid > div {
+  background: #0b1427;
+  border-left: 3px solid #8b7cf6;
+  display: grid;
+  gap: 7px;
+  min-height: 100px;
+  padding: 13px;
+}
+
+.analysis-comparison-grid > div.is-vulnerable {
+  border-left-color: #ff6b7a;
+}
+
+.analysis-comparison-grid > div.is-safe {
+  border-left-color: #2dd4a8;
+}
+
+.analysis-comparison-grid > div.is-failed {
+  border-left-color: #f5c96b;
+}
+
+.analysis-comparison-grid span,
+.analysis-comparison-grid small {
+  color: #8190ad;
+  font-size: 11px;
+}
+
+.analysis-comparison-grid strong {
+  font-size: 12px;
+}
+
+.analysis-comparison-grid .is-vulnerable strong {
+  color: #ff8994;
+}
+
+.analysis-comparison-grid .is-safe strong {
+  color: #62e3bf;
+}
+
+.analysis-comparison-grid .is-failed strong {
+  color: #ffd275;
+}
+
 .analysis-history > div:last-child {
   display: grid;
   gap: 8px;
@@ -557,8 +691,17 @@
   }
 
   .analysis-summary-grid,
-  .analysis-detail-grid {
+  .analysis-detail-grid,
+  .analysis-comparison-grid {
     grid-template-columns: 1fr;
+  }
+
+  .analysis-explanation-panel {
+    grid-column: auto;
+  }
+
+  .analysis-explanation-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .analysis-toolbar {
@@ -658,9 +801,15 @@
     text-align: left;
   }
 
+  .analysis-comparison-progress {
+    text-align: left;
+  }
+
   .analysis-summary-grid,
+  .analysis-explanation-list,
   .analysis-metrics,
-  .analysis-history > div:last-child {
+  .analysis-history > div:last-child,
+  .analysis-comparison-grid {
     grid-template-columns: 1fr;
   }
 }
