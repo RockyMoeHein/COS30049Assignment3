@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import gc
+import json
+import os
+import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -250,7 +254,8 @@ class ModelService:
 
     def _load_model(self, config: ModelConfig) -> Any:
         if config.key not in self._loaded_models:
-            self._release_codebert_models()
+            self._loaded_models.clear()
+            gc.collect()
             if not config.path.exists():
                 raise FileNotFoundError(f"Model file not found: {config.path}")
             self._loaded_models[config.key] = joblib.load(config.path)
@@ -261,61 +266,40 @@ class ModelService:
         code: str,
         config: ModelConfig,
     ) -> tuple[int, float]:
-        import torch
-        from transformers import (
-            AutoConfig,
-            AutoModelForSequenceClassification,
-            AutoTokenizer,
-        )
+        if not config.path.exists():
+            raise FileNotFoundError(f"Model file not found: {config.path}")
 
-        if config.key not in self._loaded_models:
-            if not config.path.exists():
-                raise FileNotFoundError(f"Model file not found: {config.path}")
+        self._loaded_models.clear()
+        gc.collect()
 
-            # CodeBERT checkpoints are large, so release traditional models
-            # before loading one transformer variation.
-            self._loaded_models.clear()
-            gc.collect()
+        runner_path = Path(__file__).with_name("codebert_runner.py")
+        payload = json.dumps({
+            "model_path": str(config.path),
+            "code": code,
+        })
+        environment = {
+            **os.environ,
+            "TOKENIZERS_PARALLELISM": "false",
+        }
 
-            if self._codebert_tokenizer is None:
-                self._codebert_tokenizer = AutoTokenizer.from_pretrained(
-                    "microsoft/codebert-base"
-                )
-
-            model_config = AutoConfig.from_pretrained(
-                "microsoft/codebert-base",
-                num_labels=2,
+        try:
+            result = subprocess.run(
+                [sys.executable, str(runner_path)],
+                input=payload,
+                capture_output=True,
+                check=True,
+                encoding="utf-8",
+                env=environment,
+                timeout=150,
             )
+        except subprocess.TimeoutExpired as exc:
+            raise ValueError("CodeBERT prediction timed out. Try a shorter snippet.") from exc
+        except subprocess.CalledProcessError as exc:
+            detail = exc.stderr.strip() or exc.stdout.strip() or str(exc)
+            raise ValueError(f"CodeBERT prediction failed: {detail}") from exc
 
-            model = AutoModelForSequenceClassification.from_config(model_config)
-            state_dict = torch.load(
-                config.path,
-                map_location="cpu",
-                weights_only=True,
-                mmap=True,
-            )
-            model.load_state_dict(state_dict)
-            del state_dict
-            gc.collect()
-            model.eval()
-            self._loaded_models[config.key] = model
-
-        model = self._loaded_models[config.key]
-        inputs = self._codebert_tokenizer(
-            code,
-            truncation=True,
-            padding="max_length",
-            max_length=512,
-            return_tensors="pt",
-        )
-
-        with torch.no_grad():
-            logits = model(**inputs).logits
-            probabilities = torch.softmax(logits, dim=1)[0]
-
-        prediction = int(torch.argmax(probabilities).item())
-        vulnerable_probability = round(float(probabilities[1].item()), 4)
-        return prediction, vulnerable_probability
+        output = json.loads(result.stdout)
+        return int(output["prediction"]), float(output["vulnerable_probability"])
 
     def _release_codebert_models(self) -> None:
         codebert_keys = [
