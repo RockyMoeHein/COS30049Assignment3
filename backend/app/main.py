@@ -1,0 +1,111 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.schemas import (
+    DefaultModelRequest,
+    DatasetVisualizationSummary,
+    MessageResponse,
+    ModelInfo,
+    PredictionRequest,
+    PredictionResponse,
+    VisualizationSummary,
+)
+from app.services.dataset_service import DatasetService
+from app.services.model_service import ModelService
+
+
+app = FastAPI(
+    title="C Vulnerability Detection API",
+    description="Assignment 3 backend for classifying C/C++ code as vulnerable or non-vulnerable.",
+    version="1.0.0",
+)
+
+# Allow the React development server to call this API from the browser.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+model_service = ModelService()
+dataset_service = DatasetService()
+
+
+@app.get("/", response_model=MessageResponse)
+def root() -> MessageResponse:
+    """Return a simple message for checking the API root in a browser."""
+    return MessageResponse(message="C/C++ Vulnerability Detection API is running.")
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    """Health check used to confirm that the backend server is running."""
+    return {"status": "ok", "service": "assignment3-backend"}
+
+
+@app.get("/models", response_model=list[ModelInfo])
+def list_models() -> list[dict]:
+    """Return model metadata used by the frontend model dropdown."""
+    return model_service.list_models()
+
+
+@app.put("/settings/default-model", response_model=MessageResponse)
+def update_default_model(payload: DefaultModelRequest) -> MessageResponse:
+    """Update the fallback model used when a request does not provide one."""
+    try:
+        model_service.set_default_model(payload.model_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return MessageResponse(message=f"Default model updated to '{payload.model_key}'.")
+
+
+@app.post("/predict", response_model=PredictionResponse)
+def predict(payload: PredictionRequest) -> dict:
+    """Validate submitted code, run the selected model, and return prediction JSON."""
+    try:
+        return model_service.predict(code=payload.code, model_key=payload.model_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction failed: {exc}",
+        ) from exc
+
+
+@app.get("/visualizations/summary", response_model=VisualizationSummary)
+def visualization_summary() -> dict:
+    """Return in-memory prediction history for frontend visual summaries."""
+    return model_service.visualization_summary()
+
+
+@app.get(
+    "/visualizations/dataset-summary",
+    response_model=DatasetVisualizationSummary,
+)
+def dataset_visualization_summary() -> dict:
+    """Return dataset and model summary values for the Statistics page charts."""
+    try:
+        return dataset_service.get_summary()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Dataset summary failed: {exc}",
+        ) from exc
+
+@app.delete("/history", response_model=MessageResponse)
+def clear_history() -> MessageResponse:
+    """Clear prediction history stored during the current backend session."""
+    model_service.clear_history()
+    return MessageResponse(message="Prediction history cleared.")

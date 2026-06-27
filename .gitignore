@@ -141,3 +141,13 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Python backend
+__pycache__/
+*.py[cod]
+.venv/
+.venv*/
+venv/
+
+# macOS metadata
+.DS_Store
