@@ -25,6 +25,7 @@ const systemPythonCommands = isWindows
     ];
 
 function run(command, args, options = {}) {
+  // Run backend setup commands from the backend folder for consistent paths.
   return spawnSync(command, args, {
     cwd: backendDir,
     encoding: "utf8",
@@ -34,6 +35,7 @@ function run(command, args, options = {}) {
 }
 
 function isPython313(command, args = []) {
+  // The saved Assignment 2 model files require Python 3.13 in this project.
   const result = run(
     command,
     [
@@ -47,12 +49,14 @@ function isPython313(command, args = []) {
 }
 
 function findSystemPython() {
+  // Search common Python command names on both Windows and macOS/Linux.
   return systemPythonCommands.find(({ command, args }) =>
     isPython313(command, args)
   );
 }
 
 function backendPackagesWork() {
+  // Verify the virtual environment can import the backend's required packages.
   if (!fs.existsSync(venvPython)) return false;
 
   const imports = [
@@ -65,6 +69,7 @@ function backendPackagesWork() {
 }
 
 function requirementsHash() {
+  // Track requirement changes so packages reinstall only when needed.
   return crypto
     .createHash("sha256")
     .update(fs.readFileSync(requirementsPath))
@@ -81,6 +86,7 @@ if (!fs.existsSync(requirementsPath)) {
 }
 
 if (!fs.existsSync(venvPython)) {
+  // First run: create backend/.venv313 automatically for the user.
   const python = findSystemPython();
   if (!python) {
     fail(
@@ -105,6 +111,7 @@ const savedHash = fs.existsSync(markerPath)
   : "";
 
 if (savedHash === currentHash && backendPackagesWork()) {
+  // Fast path for later runs when requirements have not changed.
   console.log("Backend environment is ready.");
   process.exit(0);
 }
@@ -116,6 +123,7 @@ if (!savedHash && backendPackagesWork()) {
 }
 
 console.log("Installing backend packages. The first setup may take several minutes...");
+// Install Python dependencies only after the venv and version checks pass.
 const install = run(venvPython, [
   "-m",
   "pip",

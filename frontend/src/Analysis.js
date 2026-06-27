@@ -68,12 +68,14 @@ function riskName(value) {
 }
 
 function getErrorMessage(data, fallback) {
+  // FastAPI may return errors as strings or validation arrays; make one message.
   if (typeof data?.detail === "string") return data.detail;
   if (Array.isArray(data?.detail)) return data.detail[0]?.msg || fallback;
   return fallback;
 }
 
 function explainRisk(features) {
+  // Convert extracted feature values into short explanations for the user.
   if (!features) return [];
 
   const notes = [];
@@ -132,6 +134,7 @@ function formatPercent(value) {
 }
 
 function buildAnalysisChartData(result) {
+  // Prepare prediction probability, risk levels, and code metrics for charts.
   const features = result?.features || {};
   const probability = Number(result?.vulnerable_probability);
   const confidence = Number(result?.confidence_percent);
@@ -173,6 +176,7 @@ function buildAnalysisChartData(result) {
 }
 
 function useD3Chart(draw, data) {
+  // Shared D3 hook: render the chart and redraw when its container changes size.
   const chartRef = useRef(null);
 
   useEffect(() => {
@@ -208,6 +212,7 @@ function useD3Chart(draw, data) {
 }
 
 function drawProbabilityDonut(d3, container, rows) {
+  // Draw vulnerable vs non-vulnerable probability when the model provides it.
   const width = Math.max(container.clientWidth || 0, 220);
   const size = Math.min(width, 260);
   const radius = size / 2;
@@ -263,6 +268,7 @@ function drawProbabilityDonut(d3, container, rows) {
 }
 
 function drawRiskRadar(d3, container, rows) {
+  // Draw the extracted risk indicators on a 0-2 radar scale.
   const width = Math.max(container.clientWidth || 0, 300);
   const size = Math.min(width, 300);
   const center = size / 2;
@@ -344,6 +350,7 @@ function RiskRadarChart({ rows }) {
 
 
 function drawMetricsChart(d3, container, rows) {
+  // Draw extracted code metrics as a compact bar chart.
   const width = Math.max(container.clientWidth || 0, 260);
   const height = 250;
   const margin = { top: 22, right: 12, bottom: 34, left: 12 };
@@ -413,6 +420,7 @@ function MetricsChart({ rows }) {
 }
 
 function AnalysisResultChart({ result }) {
+  // Builds the complete visual result panel from one prediction response.
   const chartData = useMemo(() => buildAnalysisChartData(result), [result]);
   const probabilityLegend = chartData.probability.length
     ? chartData.probability
@@ -498,6 +506,7 @@ function Analysis() {
   const [apiStatus, setApiStatus] = useState("connecting");
 
   const loadModels = useCallback(() => {
+    // Ask the backend for model metadata used by the dropdown and labels.
     setApiStatus("connecting");
     setError("");
     fetch(`${API_URL}/models`)
@@ -529,6 +538,7 @@ function Analysis() {
   const modelKey = selectedModel?.key || MODEL_KEYS[modelFamily][useVariation ? 1 : 0];
 
   function validateCode() {
+    // Stop invalid input before making a backend prediction request.
     const cleaned = code.trim();
     if (cleaned.length < 20) return "Enter at least 20 characters of C/C++ code.";
     if (cleaned.length > MAX_CODE_LENGTH) {
@@ -541,6 +551,7 @@ function Analysis() {
   }
 
   async function analyzeCode() {
+    // Main prediction flow: send code + model key to POST /predict.
     const validationError = validateCode();
     if (validationError) {
       setError(validationError);
@@ -594,6 +605,7 @@ function Analysis() {
   }
 
   async function compareModels() {
+    // Compare the same snippet across classical models without loading CodeBERT.
     const validationError = validateCode();
     if (validationError) {
       setError(validationError);
@@ -643,6 +655,7 @@ function Analysis() {
   }
 
   function loadFile(event) {
+    // Load a local source file into the editor after type and size checks.
     const file = event.target.files[0];
     if (!file) return;
 
@@ -672,6 +685,7 @@ function Analysis() {
   }
 
   function clearCode() {
+    // Reset editor content and all prediction/comparison output.
     setCode("");
     setResult(null);
     setComparisonResults([]);
@@ -681,6 +695,7 @@ function Analysis() {
   }
 
   function exportResult() {
+    // Save the latest prediction response as a local JSON file.
     if (!result) return;
     const { submitted_code: submittedCode, ...prediction } = result;
     const file = new Blob([JSON.stringify({

@@ -19,10 +19,12 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Reset scroll position when moving between pages.
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // Used by Home page buttons so navigation also closes the mobile menu.
   function changePage(path) {
     navigate(path);
     setMenuOpen(false);

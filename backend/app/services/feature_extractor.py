@@ -20,18 +20,21 @@ from typing import Dict
 # ─── Utility ────────────────────────────────────────────────────────────────
 
 def _strip_comments(code: str) -> str:
+    """Remove C/C++ comments so keywords inside comments do not affect features."""
     code = re.sub(r'//[^\n]*', '', str(code))
     code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
     return code
 
 
 def _strip_strings(code: str) -> str:
+    """Remove string contents so printed text is not counted as source logic."""
     code = re.sub(r'"[^"\\]*(?:\\.[^"\\]*)*"', '""', str(code))
     code = re.sub(r"'[^'\\]*(?:\\.[^'\\]*)*'", "''", code)
     return code
 
 
 def _clean(code: str) -> str:
+    """Normalise code before keyword and regex feature checks."""
     return _strip_strings(_strip_comments(str(code))).lower()
 
 
@@ -370,10 +373,12 @@ def count_integer_types(code: str) -> int:
 # ─── Structural Features ────────────────────────────────────────────────────
 
 def snippet_length(code: str) -> int:
+    """Count non-empty source lines submitted by the user."""
     return sum(1 for line in str(code).splitlines() if line.strip())
 
 
 def token_count(code: str) -> int:
+    """Approximate lexical token count for code-size reporting."""
     return len(re.findall(
         r'[A-Za-z_][A-Za-z0-9_]*|\d+|==|!=|<=|>=|->|\+\+|--|\S',
         str(code)
@@ -381,6 +386,7 @@ def token_count(code: str) -> int:
 
 
 def max_brace_depth(code: str) -> int:
+    """Measure maximum nested brace depth as a simple structural feature."""
     depth = 0
     max_depth = 0
 
@@ -395,6 +401,7 @@ def max_brace_depth(code: str) -> int:
 
 
 def char_diversity(code: str) -> float:
+    """Return ratio of unique characters to total characters in the snippet."""
     code = str(code)
     if len(code) == 0:
         return 0.0
@@ -408,6 +415,7 @@ def extract_features(code: str) -> Dict[str, float]:
     Compact C/C++ feature set for CVEfixes target CWEs:
     CWE-119, CWE-120, CWE-469, CWE-476, CWE-OTHERS.
     """
+    # The returned keys match the model training columns and frontend metric names.
     return {
         # ── Semantic risk levels (one per target CWE) ──────────────────────
         # CWE-119: Improper Restriction of Operations within Bounds of Memory Buffer

@@ -22,6 +22,8 @@ MODEL_DIR = BASE_DIR / "model"
 
 @dataclass(frozen=True)
 class ModelConfig:
+    """Configuration needed to find and describe one trained model artifact."""
+
     key: str
     name: str
     path: Path
@@ -31,6 +33,8 @@ class ModelConfig:
     variant: str
 
 
+# Central model registry. The frontend receives these keys through GET /models
+# and sends one key back to POST /predict when the user selects a model.
 MODEL_CONFIGS: dict[str, ModelConfig] = {
     "randomforest": ModelConfig(
         "randomforest",
@@ -151,6 +155,7 @@ class ModelService:
         self.history: list[dict[str, Any]] = []
 
     def list_models(self) -> list[dict[str, Any]]:
+        """Build the model list shown in the frontend selector."""
         models = []
         for config in MODEL_CONFIGS.values():
             model = self._loaded_models.get(config.key)
@@ -172,15 +177,21 @@ class ModelService:
         return models
 
     def set_default_model(self, model_key: str) -> None:
+        """Validate and store the backend default model key."""
         self._get_config(model_key)
         self.default_model_key = model_key
 
     def clear_history(self) -> None:
+        """Remove prediction history from this backend process."""
         self.history.clear()
 
     def predict(self, code: str, model_key: str | None = None) -> dict[str, Any]:
+        """Run the complete prediction flow for one submitted code snippet."""
         selected_key = model_key or self.default_model_key
         config = self._get_config(selected_key)
+
+        # Feature extraction runs for every model so the UI can always show
+        # risk indicators and code metrics, even for models that use text only.
         features = extract_features(code)
         if config.model_type == "codebert":
             prediction, probability = self._predict_codebert(code, config)
@@ -193,6 +204,8 @@ class ModelService:
         confidence = self._confidence_percent(prediction, probability)
         created_at = datetime.now(timezone.utc)
 
+        # Keep the response format consistent across traditional, handcrafted,
+        # and CodeBERT models so the frontend can render one result component.
         result = {
             "model_key": config.key,
             "model_name": config.name,
@@ -219,6 +232,7 @@ class ModelService:
         return result
 
     def visualization_summary(self) -> dict[str, Any]:
+        """Summarise current-session prediction history for visualisations."""
         label_counts = {"VULNERABLE": 0, "NON_VULNERABLE": 0}
         model_usage: dict[str, int] = {}
 
@@ -246,6 +260,7 @@ class ModelService:
         }
 
     def _get_config(self, model_key: str) -> ModelConfig:
+        """Look up model metadata and produce a clear error for bad keys."""
         try:
             return MODEL_CONFIGS[model_key]
         except KeyError as exc:
@@ -253,7 +268,10 @@ class ModelService:
             raise ValueError(f"Unknown model_key '{model_key}'. Valid values: {valid_keys}") from exc
 
     def _load_model(self, config: ModelConfig) -> Any:
+        """Load one traditional or handcrafted model artifact from disk."""
         if config.key not in self._loaded_models:
+            # These model files are large, so keep only the active one in
+            # memory to reduce crashes when switching between model families.
             self._loaded_models.clear()
             gc.collect()
             if not config.path.exists():
@@ -266,6 +284,7 @@ class ModelService:
         code: str,
         config: ModelConfig,
     ) -> tuple[int, float]:
+        """Run CodeBERT in a short subprocess to keep the FastAPI server stable."""
         if not config.path.exists():
             raise FileNotFoundError(f"Model file not found: {config.path}")
 
@@ -302,6 +321,7 @@ class ModelService:
         return int(output["prediction"]), float(output["vulnerable_probability"])
 
     def _release_codebert_models(self) -> None:
+        """Release CodeBERT models if they were loaded in this process."""
         codebert_keys = [
             key
             for key in self._loaded_models
@@ -318,12 +338,14 @@ class ModelService:
         features: dict[str, Any],
         uses_features: bool,
     ) -> pd.DataFrame:
+        """Create the pandas input format expected by the selected pipeline."""
         if uses_features:
             return pd.DataFrame([{"code": code, **features}])
         return pd.DataFrame({"code": [code]})
 
     @staticmethod
     def _predict_probability(model: Any, input_df: pd.DataFrame) -> float | None:
+        """Return vulnerable probability when the model supports predict_proba."""
         if not hasattr(model, "predict_proba"):
             return None
 
@@ -334,6 +356,7 @@ class ModelService:
 
     @staticmethod
     def _confidence_percent(prediction: int, probability: float | None) -> float | None:
+        """Convert vulnerable probability into confidence for the predicted class."""
         if probability is None:
             return None
         confidence = probability if prediction == 1 else 1 - probability

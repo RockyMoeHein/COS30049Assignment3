@@ -4,6 +4,7 @@ import khantPhoto from "./assets/khantthu.jpg";
 import zinPhoto from "./assets/zinko.png";
 import sawPhoto from "./assets/sawnay.jpg";
 
+// Static project information page for goals, technologies, modules, and team roles.
 function About() {
   return (
     <main className="about-page">

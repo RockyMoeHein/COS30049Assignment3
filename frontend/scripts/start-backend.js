@@ -30,6 +30,7 @@ const systemPythonCommands = isWindows
     ];
 
 function findPython() {
+  // Prefer the project virtual environment, then fall back to system Python 3.13.
   for (const relativePath of localPythonPaths) {
     const fullPath = path.join(backendDir, relativePath);
     if (fs.existsSync(fullPath) && isPython313(fullPath, [])) {
@@ -45,6 +46,7 @@ function findPython() {
 }
 
 function isPython313(command, prefixArgs) {
+  // Reject other Python versions so model artifacts load consistently.
   const check = spawnSync(
     command,
     [
@@ -79,6 +81,7 @@ if (!python) {
 }
 
 const backend = spawn(
+  // Start Uvicorn using the selected Python interpreter.
   python.command,
   [
     ...python.prefixArgs,

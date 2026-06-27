@@ -15,6 +15,7 @@ const MODEL_METRICS = [
 ];
 
 function useChart(draw, redrawKey) {
+  // Shared D3 rendering hook that redraws charts when data or size changes.
   const containerRef = useRef(null);
   const drawRef = useRef(draw);
   drawRef.current = draw;
@@ -35,6 +36,7 @@ function useChart(draw, redrawKey) {
 }
 
 function showTooltip(tooltip, event, item, unit) {
+  // Position and populate the small floating value tooltip used by all charts.
   tooltip
     .classed('is-visible', true)
     .style('left', `${event.offsetX + 12}px`)
@@ -47,6 +49,7 @@ function showTooltip(tooltip, event, item, unit) {
 }
 
 function makeInteractive(selection, getLabel, onActivate) {
+  // Adds mouse and keyboard selection behaviour to D3 chart marks.
   selection
     .attr('aria-label', getLabel)
     .attr('role', 'button')
@@ -61,6 +64,7 @@ function makeInteractive(selection, getLabel, onActivate) {
 }
 
 function ChartContainer({ chartRef, className, label }) {
+  // Standard wrapper that gives every D3 chart a tooltip and accessible label.
   return (
     <div
       aria-label={label}
@@ -74,6 +78,7 @@ function ChartContainer({ chartRef, className, label }) {
 }
 
 function DonutChart({ title, series, data, selectedItem, onSelect }) {
+  // Compares vulnerable vs non-vulnerable label counts for one dataset split.
   const vulnerable = data?.VULNERABLE || 0;
   const nonVulnerable = data?.NON_VULNERABLE || 0;
   const total = vulnerable + nonVulnerable;
@@ -157,6 +162,7 @@ function DonutChart({ title, series, data, selectedItem, onSelect }) {
 }
 
 function comparisonRows(actualData, processedData) {
+  // Convert two dictionaries into rows that can compare actual vs processed values.
   const labels = Array.from(
     new Set([
       ...Object.keys(actualData || {}),
@@ -179,6 +185,7 @@ function GroupedColumnChart({
   selectedItem,
   onSelect,
 }) {
+  // Shows actual and model-processed counts side-by-side for each category.
   const rows = useMemo(
     () => comparisonRows(actualData, processedData),
     [actualData, processedData]
@@ -284,6 +291,7 @@ function LollipopChart({
   selectedItem,
   onSelect,
 }) {
+  // Shows CWE coverage as paired actual/processed lollipop marks.
   const rows = useMemo(
     () => comparisonRows(actualData, processedData),
     [actualData, processedData]
@@ -419,6 +427,7 @@ function ModelComparisonChart({
   selectedItem,
   onSelect,
 }) {
+  // Ranks Assignment 2 baseline models by the selected evaluation metric.
   const metricLabel =
     MODEL_METRICS.find((item) => item.key === metric)?.label || 'Score';
   const rankedModels = useMemo(
@@ -514,6 +523,7 @@ function ModelComparisonChart({
 }
 
 function Statistics() {
+  // Page state: dataset summary from the backend, selected chart item, metric.
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -521,6 +531,7 @@ function Statistics() {
   const [selectedMetric, setSelectedMetric] = useState('accuracy');
 
   useEffect(() => {
+    // Load all data needed by the Statistics page from the FastAPI backend.
     let isMounted = true;
     fetch(`${API_BASE_URL}/visualizations/dataset-summary`)
       .then((response) => {
@@ -554,6 +565,7 @@ function Statistics() {
   )[0];
 
   function handleSelect(item) {
+    // Clicking the same chart item twice clears the selection panel.
     const isSame =
       selectedItem?.chart === item.chart &&
       selectedItem?.series === item.series &&

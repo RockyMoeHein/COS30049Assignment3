@@ -13,6 +13,8 @@ ZENODO_PATH = DATASET_DIR / "data_C.csv"
 
 COVERED_CWES = ["CWE-119", "CWE-120", "CWE-469", "CWE-476", "CWE-OTHERS"]
 
+# Values copied from the Assignment 2 notebook so the Statistics page can show
+# the original training data and final model input without reprocessing 1M rows.
 NOTEBOOK_TRAINING_SUMMARY = {
     "total_samples": 1_062_515,
     "label_counts": {
@@ -122,6 +124,7 @@ class DatasetService:
     @staticmethod
     @lru_cache(maxsize=1)
     def get_summary() -> dict:
+        """Build the complete dataset summary consumed by the Statistics page."""
         validation = DatasetService._load_validation()
         zenodo = DatasetService._load_zenodo()
         evaluation = DatasetService._build_evaluation_dataset(validation, zenodo)
@@ -173,6 +176,7 @@ class DatasetService:
 
     @staticmethod
     def _load_validation() -> pd.DataFrame:
+        """Load the Assignment 2 validation CSV columns needed for charts."""
         if not VALIDATION_PATH.exists():
             raise FileNotFoundError(f"Dataset file not found: {VALIDATION_PATH}")
 
@@ -183,6 +187,7 @@ class DatasetService:
 
     @staticmethod
     def _load_zenodo() -> pd.DataFrame:
+        """Load the external ZEN data used to extend the evaluation summary."""
         if not ZENODO_PATH.exists():
             raise FileNotFoundError(f"Dataset file not found: {ZENODO_PATH}")
 
@@ -196,6 +201,7 @@ class DatasetService:
         validation: pd.DataFrame,
         zenodo: pd.DataFrame,
     ) -> pd.DataFrame:
+        """Convert ZEN rows to the validation schema and remove duplicates."""
         converted = pd.DataFrame(
             {
                 "code": zenodo["vul_code"].fillna("").astype(str),
@@ -220,6 +226,7 @@ class DatasetService:
     def _build_processed_evaluation(
         evaluation: pd.DataFrame,
     ) -> pd.DataFrame:
+        """Create the balanced evaluation set used for model-focused reporting."""
         model_data = evaluation[evaluation["DataType"] != "SARD"].copy()
         sample_size = int(model_data["Label"].value_counts().min())
 
@@ -242,6 +249,7 @@ class DatasetService:
         dataset: pd.DataFrame,
         source: str,
     ) -> dict:
+        """Calculate label, source, CWE, and code-length summaries for a split."""
         code_lengths = dataset["code"].fillna("").astype(str).str.len()
         length_buckets = pd.cut(
             code_lengths,
@@ -274,6 +282,7 @@ class DatasetService:
 
     @staticmethod
     def _label_counts(dataset: pd.DataFrame) -> dict[str, int]:
+        """Return label counts using the same class names shown in the frontend."""
         counts = dataset["Label"].value_counts()
         return {
             "NON_VULNERABLE": int(counts.get(0, 0)),

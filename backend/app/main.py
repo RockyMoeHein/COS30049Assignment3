@@ -20,6 +20,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Allow the React development server to call this API from the browser.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -39,21 +40,25 @@ dataset_service = DatasetService()
 
 @app.get("/", response_model=MessageResponse)
 def root() -> MessageResponse:
-    return MessageResponse(message="C Vulnerability Detection API is running.")
+    """Return a simple message for checking the API root in a browser."""
+    return MessageResponse(message="C/C++ Vulnerability Detection API is running.")
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    """Health check used to confirm that the backend server is running."""
     return {"status": "ok", "service": "assignment3-backend"}
 
 
 @app.get("/models", response_model=list[ModelInfo])
 def list_models() -> list[dict]:
+    """Return model metadata used by the frontend model dropdown."""
     return model_service.list_models()
 
 
 @app.put("/settings/default-model", response_model=MessageResponse)
 def update_default_model(payload: DefaultModelRequest) -> MessageResponse:
+    """Update the fallback model used when a request does not provide one."""
     try:
         model_service.set_default_model(payload.model_key)
     except ValueError as exc:
@@ -63,6 +68,7 @@ def update_default_model(payload: DefaultModelRequest) -> MessageResponse:
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict(payload: PredictionRequest) -> dict:
+    """Validate submitted code, run the selected model, and return prediction JSON."""
     try:
         return model_service.predict(code=payload.code, model_key=payload.model_key)
     except ValueError as exc:
@@ -78,6 +84,7 @@ def predict(payload: PredictionRequest) -> dict:
 
 @app.get("/visualizations/summary", response_model=VisualizationSummary)
 def visualization_summary() -> dict:
+    """Return in-memory prediction history for frontend visual summaries."""
     return model_service.visualization_summary()
 
 
@@ -86,6 +93,7 @@ def visualization_summary() -> dict:
     response_model=DatasetVisualizationSummary,
 )
 def dataset_visualization_summary() -> dict:
+    """Return dataset and model summary values for the Statistics page charts."""
     try:
         return dataset_service.get_summary()
     except FileNotFoundError as exc:
@@ -96,8 +104,8 @@ def dataset_visualization_summary() -> dict:
             detail=f"Dataset summary failed: {exc}",
         ) from exc
 
-
 @app.delete("/history", response_model=MessageResponse)
 def clear_history() -> MessageResponse:
+    """Clear prediction history stored during the current backend session."""
     model_service.clear_history()
     return MessageResponse(message="Prediction history cleared.")

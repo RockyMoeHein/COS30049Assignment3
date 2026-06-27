@@ -1,6 +1,7 @@
 import React from "react";
 import "./Home.css";
 
+// Landing page that introduces the detector and routes users into analysis.
 function Home({ goToAnalyze, goToAbout }) {
   return (
     <main className="home-page">

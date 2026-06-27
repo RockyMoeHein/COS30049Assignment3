@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class PredictionRequest(BaseModel):
+    """Request body expected by POST /predict."""
+
     code: str = Field(
         ...,
         min_length=20,
@@ -19,6 +21,7 @@ class PredictionRequest(BaseModel):
     @field_validator("code")
     @classmethod
     def validate_code(cls, value: str) -> str:
+        """Reject empty input or text that does not resemble C/C++ source code."""
         cleaned = value.strip()
         if not cleaned:
             raise ValueError("Code snippet cannot be empty.")
